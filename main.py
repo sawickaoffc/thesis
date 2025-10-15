@@ -25,7 +25,7 @@ def  main():
         return
 
     while True:
-        ret, frame = cap.read()
+        ret, frame = cap.read() # odczytuje jedną klatkę
         if not ret:
             print("Błąd odczytu klatki z kamery")
             break
@@ -33,10 +33,10 @@ def  main():
         # Dodaj klatkę do bufora
         bufor.append(frame)
 
-        # Jeśli bufor jest jeszcze niepełny -> wróć po następną klatkę
+        # Jeśli bufor jest jeszcze niepełny to wróć po następną klatkę
         if len(bufor) < bufor.maxlen:
-            cv2.imshow("Podgląd", frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            cv2.imshow("Podgląd", frame) #wyświetlam sobie obraz
+            if cv2.waitKey(1) & 0xFF == ord('q'):  # warunek zatrzymania programu, klawisz Q
                 break
             continue
 
@@ -70,5 +70,5 @@ def  main():
     cap.release()
     cv2.destroyAllWindows()
 
-if __name__ == "__main__":
+if __name__ == "__main__": #uruchomił main() tylko wtedy, gdy ten plik został uruchomiony bezpośrednio, a nie np. zaimportowany z innego pliku.
     main()
