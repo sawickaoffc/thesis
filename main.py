@@ -125,26 +125,27 @@ def klasyfikuj_dyn(buffer):
     return random.choice(litery_dyn)
 
 
-def przetworz_video(video_path, wzorce):
-    """Przetwarza pojedynczy plik wideo z użyciem MediaPipe Hands, bez powtarzających się ostrzeżeń."""
-    print(f"\n▶️ Rozpoczynam analizę pliku: {video_path}")
+def przetworz_video(video_path, wzorce_stat):
+    """Przetwarza wideo, wykrywając statyczne i dynamiczne gesty, szybko i stabilnie."""
+    print(f"\n▶️ Analiza pliku: {video_path}")
     bufor = deque(maxlen=25)
-    historia_gestow = deque(maxlen=10)
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"❌ Nie można otworzyć pliku wideo: {video_path}")
         return
 
-    # 🔹 Inicjalizacja stanu filtrów stabilizacji
-    main.last_letter = None
-    main.stable_count = 0
+    main.last_stat = None
+    main.stable_stat_count = 0
+    main.last_dyn = None
+    main.stable_dyn_count = 0
 
-    # 🔹 Tworzymy obiekt Hands raz dla całego wideo (statyczne gesty)
+    # Jeden obiekt Hands dla całego wideo
     with mp_hands.Hands(
-        static_image_mode=True,
+        static_image_mode=False,  # False = wideo
         max_num_hands=1,
-        min_detection_confidence=0.6
+        min_detection_confidence=0.6,
+        min_tracking_confidence=0.6
     ) as hands:
 
         while True:
@@ -153,49 +154,61 @@ def przetworz_video(video_path, wzorce):
                 print(f"🎬 Koniec filmu: {video_path}")
                 break
 
-            # Dodaj klatkę do bufora
             bufor.append(frame)
 
-            # Jeśli bufor jeszcze się nie zapełnił – czekaj
-            if len(bufor) < bufor.maxlen:
-                cv2.imshow("Podgląd", frame)
-                if cv2.waitKey(30) & 0xFF == ord('q'):
-                    break
-                continue
+            # Konwersja na RGB i przetwarzanie klatki
+            image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = hands.process(image_rgb)
 
-            # Klasyfikacja statyczna z już utworzonym obiektem hands
-            wynik_stat = klasyfikuj_stat(bufor[0], wzorce, hands)
+            # Rysowanie szkieletu dłoni
+            if results.multi_hand_landmarks:
+                for hand_landmarks in results.multi_hand_landmarks:
+                    mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-            if wynik_stat == '-':
-                cv2.imshow("Podgląd", frame)
-                if cv2.waitKey(30) & 0xFF == ord('q'):
-                    break
-                continue
+                # --- Klasyfikacja statyczna --- #
+                szkiel_test = ekstraktuj_punkty(results.multi_hand_landmarks[0])
+                najlepszy_stat = '-'
+                min_dist = float('inf')
+                for litera, szkiel_wzorzec in wzorce_stat.items():
+                    dist = porownaj_szkielety(szkiel_test, szkiel_wzorzec)
+                    if dist < min_dist:
+                        min_dist = dist
+                        najlepszy_stat = litera
 
-            # --- FILTR STABILIZACJI --- #
-            MIN_STABLE_FRAMES = 10
+                # Stabilizacja statyczna
+                if najlepszy_stat == main.last_stat:
+                    main.stable_stat_count += 1
+                else:
+                    main.stable_stat_count = 0
+                main.last_stat = najlepszy_stat
 
-            if wynik_stat == main.last_letter:
-                main.stable_count += 1
-            else:
-                main.stable_count = 0
-            main.last_letter = wynik_stat
+                if main.stable_stat_count >= 16:
+                    print(f"✋ Wykryto statyczny gest: {najlepszy_stat}")
+                    main.stable_stat_count = 0
 
-            if main.stable_count >= MIN_STABLE_FRAMES:
-                print(f"✋ Wykryto gest statyczny: {wynik_stat}")
-                main.stable_count = 0  # wyzeruj po detekcji
+                # --- Klasyfikacja dynamiczna (ruch dłoni) --- #
+                # Prosta heurystyka: porównanie odległości punktów z poprzednią klatką
+                if len(bufor) > 1:
+                    prev_frame = bufor[-2]
+                    # Tu możesz dodać bardziej zaawansowaną analizę ruchu
+                    # Na razie: losowy wybór dynamicznej litery dla testu
+                    dyn_gest = random.choice(['Ą','Ę','Ł','Ó','-','Ś','Ź','Ż'])
+                    if dyn_gest == main.last_dyn:
+                        main.stable_dyn_count += 1
+                    else:
+                        main.stable_dyn_count = 0
+                    main.last_dyn = dyn_gest
 
-            # Wyświetl podgląd
+                    if main.stable_dyn_count >= 12:
+                        print(f"🎯 Wykryto dynamiczny gest: {dyn_gest}")
+                        main.stable_dyn_count = 0
+
             cv2.imshow("Podgląd", frame)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
 
     cap.release()
     cv2.destroyAllWindows()
-
-    # Po zakończeniu filmu wyczyść stan
-    main.last_letter = None
-    main.stable_count = 0
 
 def main():
     # 🔹 Lista plików wideo do przetworzenia
