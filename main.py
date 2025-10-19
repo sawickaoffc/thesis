@@ -1,15 +1,15 @@
 import os, sys
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-stderr_backup = sys.stderr
-sys.stderr = open(os.devnull, "w")
+import contextlib
 
+import mediapipe as mp
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # wyłącza INFO i WARNING TensorFlow
+os.environ['GLOG_minloglevel'] = '3'      # wyłącza INFO i WARNING MediaPipe C++
 import math  # [DODANE] do obliczania odległości między punktami
 import logging
 logging.getLogger('mediapipe').setLevel(logging.ERROR)
 import cv2
 import random
 from collections import deque
-import mediapipe as mp  # [MP] biblioteka do analizy dłoni
 # [MP] Inicjalizacja MediaPipe Hands
 mp_hands = mp.solutions.hands #pobiera moduł hands z pakietu mediapipe do ykrywania i śledzenia dłoni
 mp_drawing = mp.solutions.drawing_utils #pobiera moduł drawing_utils z mediapipe do rysowania landmarków i połączeń dłoni na obrazie (linie i punkty)
@@ -75,35 +75,36 @@ def wczytaj_wzorce(folder_path):
 # Funkcja "zaślepka" – klasyfikacja statyczna
 #with to konstrukcja w Pythonie używana do zarządzania kontekstem.
 # Oznacza to, że automatycznie wykonuje pewne czynności przy wejściu i wyjściu z bloku kodu.
-def klasyfikuj_stat(frame, wzorce):  # [DODANE] dodano argument wzorce
-    # [MP] Utwórz obiekt Hands dla pojedynczej klatki (statyczny gest)
-    with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.6) as hands:
-        # [MP] Konwersja obrazu na RGB dla mediapipe zamiast BGR
-        image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = hands.process(image_rgb)
+# Funkcja klasyfikująca statyczny gest z już utworzonym obiektem hands
+def klasyfikuj_stat(frame, wzorce, hands):
+    """
+    frame: pojedyncza klatka obrazu (BGR)
+    wzorce: słownik wzorców statycznych
+    hands: obiekt mp_hands.Hands utworzony raz wcześniej
+    """
+    # Konwersja obrazu na RGB dla MediaPipe
+    image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    results = hands.process(image_rgb)
 
-        # [MP] Jeśli wykryto dłoń – narysuj szkielet
-        if results.multi_hand_landmarks:
-            for hand_landmarks in results.multi_hand_landmarks:
-                mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
+    if results.multi_hand_landmarks:
+        for hand_landmarks in results.multi_hand_landmarks:
+            mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 
-            # [DODANE] Ekstrakcja punktów dłoni i porównanie z wzorcami
-            hand_landmarks = results.multi_hand_landmarks[0]
-            szkiel_test = ekstraktuj_punkty(hand_landmarks)
+        # Ekstrakcja punktów dłoni i porównanie z wzorcami
+        hand_landmarks = results.multi_hand_landmarks[0]
+        szkiel_test = ekstraktuj_punkty(hand_landmarks)
 
-            najlepszy_znak = '-'
-            min_dystans = float('inf')
-            for litera, szkiel_wzorzec in wzorce.items():
-                dist = porownaj_szkielety(szkiel_test, szkiel_wzorzec)
-                if dist < min_dystans:
-                    min_dystans = dist
-                    najlepszy_znak = litera
+        najlepszy_znak = '-'
+        min_dystans = float('inf')
+        for litera, szkiel_wzorzec in wzorce.items():
+            dist = porownaj_szkielety(szkiel_test, szkiel_wzorzec)
+            if dist < min_dystans:
+                min_dystans = dist
+                najlepszy_znak = litera
 
-            return najlepszy_znak
+        return najlepszy_znak
 
-    # Jeśli nie wykryto dłoni
     return '-'
-
 
 # Funkcja "zaślepka" – klasyfikacja dynamiczna
 def klasyfikuj_dyn(buffer):
@@ -125,63 +126,69 @@ def klasyfikuj_dyn(buffer):
 
 
 def przetworz_video(video_path, wzorce):
-    """Przetwarza pojedynczy plik wideo"""
+    """Przetwarza pojedynczy plik wideo z użyciem MediaPipe Hands, bez powtarzających się ostrzeżeń."""
     print(f"\n▶️ Rozpoczynam analizę pliku: {video_path}")
     bufor = deque(maxlen=25)
     historia_gestow = deque(maxlen=10)
 
     cap = cv2.VideoCapture(video_path)
-
     if not cap.isOpened():
         print(f"❌ Nie można otworzyć pliku wideo: {video_path}")
         return
 
-    # 🔹 Inicjalizacja tylko raz na całe wideo (nie co klatkę!)
+    # 🔹 Inicjalizacja stanu filtrów stabilizacji
     main.last_letter = None
     main.stable_count = 0
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print(f"🎬 Koniec filmu: {video_path}")
-            break
+    # 🔹 Tworzymy obiekt Hands raz dla całego wideo (statyczne gesty)
+    with mp_hands.Hands(
+        static_image_mode=True,
+        max_num_hands=1,
+        min_detection_confidence=0.6
+    ) as hands:
 
-        # Dodaj klatkę do bufora
-        bufor.append(frame)
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print(f"🎬 Koniec filmu: {video_path}")
+                break
 
-        # Jeśli bufor jeszcze się nie zapełnił – czekaj
-        if len(bufor) < bufor.maxlen:
+            # Dodaj klatkę do bufora
+            bufor.append(frame)
+
+            # Jeśli bufor jeszcze się nie zapełnił – czekaj
+            if len(bufor) < bufor.maxlen:
+                cv2.imshow("Podgląd", frame)
+                if cv2.waitKey(30) & 0xFF == ord('q'):
+                    break
+                continue
+
+            # Klasyfikacja statyczna z już utworzonym obiektem hands
+            wynik_stat = klasyfikuj_stat(bufor[0], wzorce, hands)
+
+            if wynik_stat == '-':
+                cv2.imshow("Podgląd", frame)
+                if cv2.waitKey(30) & 0xFF == ord('q'):
+                    break
+                continue
+
+            # --- FILTR STABILIZACJI --- #
+            MIN_STABLE_FRAMES = 10
+
+            if wynik_stat == main.last_letter:
+                main.stable_count += 1
+            else:
+                main.stable_count = 0
+            main.last_letter = wynik_stat
+
+            if main.stable_count >= MIN_STABLE_FRAMES:
+                print(f"✋ Wykryto gest statyczny: {wynik_stat}")
+                main.stable_count = 0  # wyzeruj po detekcji
+
+            # Wyświetl podgląd
             cv2.imshow("Podgląd", frame)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
-            continue
-
-        # Klasyfikacja statyczna
-        wynik_stat = klasyfikuj_stat(bufor[0], wzorce)
-
-        if wynik_stat == '-':
-            cv2.imshow("Podgląd", frame)
-            if cv2.waitKey(30) & 0xFF == ord('q'):
-                break
-            continue
-
-        # --- FILTR STABILIZACJI --- #
-        MIN_STABLE_FRAMES = 5
-
-        if wynik_stat == main.last_letter:
-            main.stable_count += 1
-        else:
-            main.stable_count = 0
-        main.last_letter = wynik_stat
-
-        if main.stable_count >= MIN_STABLE_FRAMES:
-            print(f"✋ Wykryto gest statyczny: {wynik_stat}")
-            main.stable_count = 0  # wyzeruj po detekcji
-
-        # Wyświetl podgląd
-        cv2.imshow("Podgląd", frame)
-        if cv2.waitKey(30) & 0xFF == ord('q'):
-            break
 
     cap.release()
     cv2.destroyAllWindows()
@@ -210,5 +217,3 @@ def main():
 
 if __name__ == "__main__": #uruchomił main() tylko wtedy, gdy ten plik został uruchomiony bezpośrednio, a nie np. zaimportowany z innego pliku.
     main()
-
-sys.stderr = stderr_backup
