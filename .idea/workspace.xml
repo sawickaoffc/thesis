@@ -4,11 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cb9ab972-a439-4aab-93c7-c5b6e8d526ba" name="Changes" comment="comments">
-      <change afterPath="$PROJECT_DIR$/pfa1.avi" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pfa2.mp4" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pfa3.avi" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pfa4.avi" afterDir="false" />
+    <list default="true" id="cb9ab972-a439-4aab-93c7-c5b6e8d526ba" name="Changes" comment="proba statycznych">
+      <change afterPath="$PROJECT_DIR$/statycze/a.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/b.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/c.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/e.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/i.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/l.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/m.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/n.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/o.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/p.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/r.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/s.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/t.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/u.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/w.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/statycze/y.jpg" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -53,6 +65,33 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RunManager">
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="thesis" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="TF_CPP_MIN_LOG_LEVEL" value="3" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.13 (thesis)" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="true" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -74,7 +113,11 @@
       <workItem from="1760280163402" duration="5268000" />
       <workItem from="1760528781948" duration="3902000" />
       <workItem from="1760608436282" duration="2000" />
-      <workItem from="1760693870500" duration="3142000" />
+      <workItem from="1760693870500" duration="7747000" />
+      <workItem from="1760801657306" duration="4180000" />
+      <workItem from="1760814269352" duration="1138000" />
+      <workItem from="1760875281753" duration="1631000" />
+      <workItem from="1760877389438" duration="666000" />
     </task>
     <task id="LOCAL-00001" summary="ok">
       <option name="closed" value="true" />
@@ -92,7 +135,15 @@
       <option name="project" value="LOCAL" />
       <updated>1760529594461</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="ze szkieletem">
+      <option name="closed" value="true" />
+      <created>1760698962140</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1760698962141</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -102,10 +153,22 @@
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="ok" />
     <MESSAGE value="comments" />
-    <option name="LAST_COMMIT_MESSAGE" value="comments" />
+    <MESSAGE value="ze szkieletem" />
+    <option name="LAST_COMMIT_MESSAGE" value="ze szkieletem" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/thesis$main.coverage" NAME="main Coverage Results" MODIFIED="1760698188828" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/thesis$main.coverage" NAME="main Coverage Results" MODIFIED="1760878061402" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/thesis$test.coverage" NAME="test Coverage Results" MODIFIED="1760281839851" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
