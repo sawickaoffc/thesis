@@ -1,0 +1,4 @@
+# Ignoruj duże pliki wideo i archiwa
+*.avi
+*.mp4
+*.zip
