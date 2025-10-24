@@ -7,6 +7,9 @@ import random
 from collections import deque
 import mediapipe as mp  # [MP] biblioteka do analizy dłoni
 print("MediaPipe działa poprawnie!")
+from fastdtw import fastdtw
+from scipy.spatial.distance import euclidean
+
 
 # ============================================================
 #  KONFIGURACJA
@@ -130,7 +133,7 @@ def wczytaj_wzorce_dynamiczne(folder_path):
 #with to konstrukcja w Pythonie używana do zarządzania kontekstem.
 # Oznacza to, że automatycznie wykonuje pewne czynności przy wejściu i wyjściu z bloku kodu.
 def klasyfikuj_stat(frame, wzorce_stat):
-    max_allowed_distance = 0.2 # spróbowac dobrać
+    max_allowed_distance = 0.29 # spróbowac dobrać
     # [MP] Utwórz obiekt Hands dla pojedynczej klatki (statyczny gest)
     with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.3) as hands:
         # [MP] Konwersja obrazu na RGB dla mediapipe zamiast BGR
@@ -227,13 +230,36 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
                 break
             continue
 
+        ruchowy_prog = 0.1  # im mniejszy, tym łatwiej uzna za statyczny
+
         if wynik_stat in potencjalnie_dynamiczne:
-            wynik_dyn = klasyfikuj_dyn(list(bufor), wzorce_dyn)
-            if wynik_dyn != '-':
-                print(f"💫 Wykryto gest dynamiczny: {wynik_dyn}")
-                bufor.clear()
+            # --- oblicz średni ruch dłoni między pierwszą a piątą klatką ---
+            with mp_hands.Hands(static_image_mode=False, max_num_hands=1) as hands:
+                def pobierz_szkielet(frame):
+                    res = hands.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+                    if res.multi_hand_landmarks:
+                        return ekstraktuj_punkty(res.multi_hand_landmarks[0])
+                    return None
+
+                szk1 = pobierz_szkielet(bufor[0])
+                szk2 = pobierz_szkielet(bufor[min(5, len(bufor) - 1)])
+
+            if szk1 is not None and szk2 is not None:
+                sredni_ruch = porownaj_szkielety(szk1, szk2)
             else:
-                print(f"👌 Wykryto gest statyczny: {wynik_stat}")
+                sredni_ruch = 0
+
+            #  statyczny czy dynamiczny
+            if sredni_ruch > ruchowy_prog:
+                wynik_dyn = klasyfikuj_dyn(list(bufor), wzorce_dyn)
+
+                if wynik_dyn != '-':
+                    print(f"💫 Wykryto gest dynamiczny: {wynik_dyn}")
+                    bufor.clear()
+                else:
+                    print(f"👌 Wykryto gest statyczny: {wynik_stat}")
+            else:
+                print(f"👌 Ręka stabilna ({sredni_ruch:.3f}) → gest statyczny: {wynik_stat}")
         else:
             print(f"👌 Wykryto gest statyczny: {wynik_stat}")
 
