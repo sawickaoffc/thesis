@@ -80,53 +80,43 @@ def wczytaj_wzorce(folder_path):
 # ============================================================
 
 def wczytaj_wzorce_dynamiczne(folder_path):
-    """
-    Wczytuje wzorce gestów dynamicznych z plików wideo.
-    Każdy wzorzec jest listą klatek, a każda klatka to lista punktów dłoni.
-    """
-    print(f"🎥 Wczytywanie wzorców dynamicznych z: {folder_path}")
-    wzorce_dyn = {}
+    """Wczytuje wzorce dynamiczne (wideo) i zapisuje sekwencje landmarków."""
+    print(f"📂 Wczytywanie wzorców dynamicznych z: {folder_path}")
+    wzorce = {}
+    mp_hands = mp.solutions.hands
 
-    with mp_hands.Hands(
-        static_image_mode=False,
-        max_num_hands=1,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5
-    ) as hands:
+    for filename in os.listdir(folder_path):
+        if not filename.lower().endswith((".mp4", ".avi", ".mov")):
+            continue
 
-        for filename in os.listdir(folder_path):
-            if not filename.lower().endswith((".mp4", ".avi", ".mov")):
-                continue
+        label = os.path.splitext(filename)[0].lower()
+        path = os.path.join(folder_path, filename)
 
-            path = os.path.join(folder_path, filename)
-            cap = cv2.VideoCapture(path)
-            if not cap.isOpened():
-                print(f"⚠ Nie można otworzyć pliku: {filename}")
-                continue
+        cap = cv2.VideoCapture(path)
+        sekwencja = []
 
-            sekwencja = []
+        with mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.4) as hands:
             while True:
                 ret, frame = cap.read()
                 if not ret:
                     break
-
                 image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = hands.process(image_rgb)
                 if results.multi_hand_landmarks:
-                    hand_landmarks = results.multi_hand_landmarks[0]
-                    punkty = ekstraktuj_punkty(hand_landmarks)
+                    punkty = ekstraktuj_punkty(results.multi_hand_landmarks[0])
                     sekwencja.append(punkty)
 
-            cap.release()
-            label = os.path.splitext(filename)[0].lower()
-            if sekwencja:
-                wzorce_dyn[label] = sekwencja
-                print(f"✅ Załadowano gest dynamiczny: {label} ({len(sekwencja)} klatek)")
-            else:
-                print(f"⚠ Brak dłoni w wideo: {filename}")
+        cap.release()
 
-    print(f"📁 Łącznie {len(wzorce_dyn)} wzorców dynamicznych.\n")
-    return wzorce_dyn
+        if sekwencja:
+            wzorce[label] = sekwencja
+            print(f"✅ Załadowano dynamiczny wzorzec: {label} ({len(sekwencja)} klatek)")
+        else:
+            print(f"⚠ Brak dłoni w: {filename}")
+
+    print(f"📁 Łącznie {len(wzorce)} wzorców dynamicznych wczytanych.\n")
+    return wzorce
+
 
 
 # Funkcja "zaślepka" – klasyfikacja statyczna
@@ -158,44 +148,55 @@ def klasyfikuj_stat(frame, wzorce_stat):
 
     return '-'
 
-# Funkcja "zaślepka" – klasyfikacja dynamiczna
 def klasyfikuj_dyn(buffer, wzorce_dyn):
     """
-    Klasyfikuje ruch dłoni jako gest dynamiczny,
-    porównując przebieg klatek z wzorcami dynamicznymi.
+    Klasyfikuje gest dynamiczny przy użyciu DTW (Dynamic Time Warping).
+    buffer: lista klatek (np. deque) aktualnego gestu
+    wzorce_dyn: słownik {etykieta: [lista klatek -> [punkty dłoni]]}
     """
-    # Utworzenie szkieletów z bufora bieżącego
-    with mp_hands.Hands(static_image_mode=False, max_num_hands=1) as hands:
-        test_seq = []
+
+    mp_hands = mp.solutions.hands
+    sekwencja_test = []
+
+    # 1️⃣ Ekstrakcja punktów dłoni z każdej klatki w buforze
+    with mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.4) as hands:
         for frame in buffer:
             image_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(image_rgb)
             if results.multi_hand_landmarks:
-                hand_landmarks = results.multi_hand_landmarks[0]
-                test_seq.append(ekstraktuj_punkty(hand_landmarks))
+                punkty = ekstraktuj_punkty(results.multi_hand_landmarks[0])
+                sekwencja_test.append(punkty)
 
-    if not test_seq:
+    if not sekwencja_test:
+        return '-'  # brak dłoni w sekwencji
+
+    # 2️⃣ Porównanie z każdym wzorcem dynamicznym przy użyciu DTW
+    najlepszy_gest = '-'
+    min_dtw = float("inf")
+
+    for label, seq_wzorzec in wzorce_dyn.items():
+        # DTW działa na sekwencjach punktów (każda klatka to wektor 42D)
+        # Spłaszcz każdy szkielet do jednowymiarowej listy
+        def flatten(seq):
+            return [coord for point in seq for coord in point]
+
+        seq_test_flat = [flatten(f) for f in sekwencja_test]
+        seq_wzorzec_flat = [flatten(f) for f in seq_wzorzec]
+
+        distance, _ = fastdtw(seq_test_flat, seq_wzorzec_flat, dist=euclidean)
+
+        if distance < min_dtw:
+            min_dtw = distance
+            najlepszy_gest = label
+
+    # 3️⃣ Próg akceptacji – im mniejszy, tym gest bardziej podobny
+    prog_akceptacji = 50  # trzeba dobrać eksperymentalnie
+    if min_dtw > prog_akceptacji:
         return '-'
 
-    # Proste dopasowanie sekwencji z karą za różnicę długości
-    def porownaj_sekwencje(seq1, seq2):
-        min_len = min(len(seq1), len(seq2))
-        dystanse = [porownaj_szkielety(seq1[i], seq2[i]) for i in range(min_len)]
-        sredni = sum(dystanse) / len(dystanse)
-        kara_dlugosc = abs(len(seq1) - len(seq2)) * 0.02
-        return sredni + kara_dlugosc
+    print(f"🔄 DTW distance for best match ({najlepszy_gest}): {min_dtw:.2f}")
+    return najlepszy_gest
 
-    najlepszy, min_dist = '-', float('inf')
-    for gest, seq_wzorzec in wzorce_dyn.items():
-        dist = porownaj_sekwencje(test_seq, seq_wzorzec)
-        if dist < min_dist:
-            min_dist = dist
-            najlepszy = gest
-
-    # Próg dopasowania (dobierany eksperymentalnie)
-    if min_dist > 0.3:
-        return '-'
-    return najlepszy
 
 
 def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
@@ -208,7 +209,7 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
         return
 
     # gesty, które mogą być początkiem dynamicznych
-    potencjalnie_dynamiczne = {'a','c','e','i','l','n','o','r','s'}
+    potencjalnie_dynamiczne = {'a','c','d','e','f','g','h','j','k','l','n','o','r','s','z'}
 
     while True:
         ret, frame = cap.read()
@@ -230,7 +231,7 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
                 break
             continue
 
-        ruchowy_prog = 0.1  # im mniejszy, tym łatwiej uzna za statyczny
+        ruchowy_prog = 0.02  # im mniejszy, tym łatwiej uzna za statyczny
 
         if wynik_stat in potencjalnie_dynamiczne:
             # --- oblicz średni ruch dłoni między pierwszą a piątą klatką ---
