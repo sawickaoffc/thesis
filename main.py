@@ -43,8 +43,8 @@ def porownaj_szkielety(szk1, szk2):
     """Porównuje dwa szkielety dłoni — im mniejszy dystans, tym większe podobieństwo."""
     if len(szk1) != len(szk2):
         return float("inf")
-    return sum(math.dist(a, b) for a, b in zip(szk1, szk2)) / len(szk1)
-#Liczy średnią odległość między odpowiadającymi sobie punktami, im mniejsza wartość tym bardziej podobne gesty
+    # zamiast średniej -> maksymalna odległość
+    return max(math.dist(a, b) for a, b in zip(szk1, szk2))
 
 # ============================================================
 #  WCZYTYWANIE WZORCÓW STATYCZNYCH
@@ -123,7 +123,7 @@ def wczytaj_wzorce_dynamiczne(folder_path):
 #with to konstrukcja w Pythonie używana do zarządzania kontekstem.
 # Oznacza to, że automatycznie wykonuje pewne czynności przy wejściu i wyjściu z bloku kodu.
 def klasyfikuj_stat(frame, wzorce_stat):
-    max_allowed_distance = 0.29 # spróbowac dobrać
+    max_allowed_distance = 0.40 # spróbowac dobrać
     # [MP] Utwórz obiekt Hands dla pojedynczej klatki (statyczny gest)
     with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.3) as hands:
         # [MP] Konwersja obrazu na RGB dla mediapipe zamiast BGR
@@ -174,34 +174,45 @@ def klasyfikuj_dyn(buffer, wzorce_dyn):
     najlepszy_gest = '-'
     min_dtw = float("inf")
 
-    for label, seq_wzorzec in wzorce_dyn.items():
-        # DTW działa na sekwencjach punktów (każda klatka to wektor 42D)
-        # Spłaszcz każdy szkielet do jednowymiarowej listy
-        def flatten(seq):
-            return [coord for point in seq for coord in point]
+    def flatten(seq):
+        """Spłaszcza punkty dłoni [(x, y), ...] do [x1, y1, x2, y2, ...]"""
+        return [coord for point in seq for coord in point]
 
-        seq_test_flat = [flatten(f) for f in sekwencja_test]
+    # Spłaszcz sekwencję testową (na początku – całość)
+    seq_test_flat = [flatten(f) for f in sekwencja_test]
+
+    for label, seq_wzorzec in wzorce_dyn.items():
+        # Ustal długość analizowanej części bufora = długość wzorca + 5%
+        len_wzorzec = len(seq_wzorzec)
+        len_test = int(len_wzorzec * 1.05)
+        seq_test_cut = seq_test_flat[:len_test]  # utnij do długości wzorca + 5%
+
         seq_wzorzec_flat = [flatten(f) for f in seq_wzorzec]
 
-        distance, _ = fastdtw(seq_test_flat, seq_wzorzec_flat, dist=euclidean)
+        # Oblicz DTW
+        distance, _ = fastdtw(seq_test_cut, seq_wzorzec_flat, dist=euclidean)
+
+        # 🔹 Normalizacja przez długość sekwencji testowej
+        distance /= max(1, len(seq_test_cut))
 
         if distance < min_dtw:
             min_dtw = distance
             najlepszy_gest = label
 
     # 3️⃣ Próg akceptacji – im mniejszy, tym gest bardziej podobny
-    prog_akceptacji = 50  # trzeba dobrać eksperymentalnie
+    prog_akceptacji = 3.5  # po normalizacji wartości są mniejsze – trzeba dobrać eksperymentalnie
     if min_dtw > prog_akceptacji:
         return '-'
 
-    print(f"🔄 DTW distance for best match ({najlepszy_gest}): {min_dtw:.2f}")
+    print(f"🔄 DTW distance for best match ({najlepszy_gest}): {min_dtw:.3f}")
     return najlepszy_gest
+
 
 
 
 def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
     print(f"\n▶️ Rozpoczynam analizę pliku: {video_path}")
-    bufor = deque(maxlen=25)
+    bufor = deque(maxlen=40)
     cap = cv2.VideoCapture(video_path)
 
     if not cap.isOpened():
