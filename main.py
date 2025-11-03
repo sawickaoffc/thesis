@@ -123,7 +123,7 @@ def wczytaj_wzorce_dynamiczne(folder_path):
 #with to konstrukcja w Pythonie używana do zarządzania kontekstem.
 # Oznacza to, że automatycznie wykonuje pewne czynności przy wejściu i wyjściu z bloku kodu.
 def klasyfikuj_stat(frame, wzorce_stat):
-    max_allowed_distance = 0.40 # spróbowac dobrać
+    max_allowed_distance = 0.4 # spróbowac dobrać
     # [MP] Utwórz obiekt Hands dla pojedynczej klatki (statyczny gest)
     with mp_hands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.3) as hands:
         # [MP] Konwersja obrazu na RGB dla mediapipe zamiast BGR
@@ -182,12 +182,12 @@ def klasyfikuj_dyn(buffer, wzorce_dyn):
     seq_test_flat = [flatten(f) for f in sekwencja_test]
 
     for label, seq_wzorzec in wzorce_dyn.items():
+        seq_wzorzec_flat = [flatten(f) for f in seq_wzorzec]
+        
         # Ustal długość analizowanej części bufora = długość wzorca + 5%
-        len_wzorzec = len(seq_wzorzec)
+        len_wzorzec = len(seq_wzorzec_flat)
         len_test = int(len_wzorzec * 1.05)
         seq_test_cut = seq_test_flat[:len_test]  # utnij do długości wzorca + 5%
-
-        seq_wzorzec_flat = [flatten(f) for f in seq_wzorzec]
 
         # Oblicz DTW
         distance, _ = fastdtw(seq_test_cut, seq_wzorzec_flat, dist=euclidean)
@@ -200,7 +200,7 @@ def klasyfikuj_dyn(buffer, wzorce_dyn):
             najlepszy_gest = label
 
     # 3️⃣ Próg akceptacji – im mniejszy, tym gest bardziej podobny
-    prog_akceptacji = 3.5  # po normalizacji wartości są mniejsze – trzeba dobrać eksperymentalnie
+    prog_akceptacji = 0.4 # po normalizacji wartości są mniejsze – trzeba dobrać eksperymentalnie
     if min_dtw > prog_akceptacji:
         return '-'
 
@@ -230,19 +230,19 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
 
         bufor.append(frame)
         if len(bufor) < bufor.maxlen:
-            cv2.imshow("Podgląd", frame)
+            cv2.imshow("Podglad", frame)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
             continue
 
         wynik_stat = klasyfikuj_stat(bufor[0], wzorce_stat)
         if wynik_stat == '-':
-            cv2.imshow("Podgląd", frame)
+            cv2.imshow("Podglad", frame)
             if cv2.waitKey(30) & 0xFF == ord('q'):
                 break
             continue
 
-        ruchowy_prog = 0.02  # im mniejszy, tym łatwiej uzna za statyczny
+        ruchowy_prog = 0.0  # im mniejszy, tym łatwiej uzna za statyczny
 
         if wynik_stat in potencjalnie_dynamiczne:
             # --- oblicz średni ruch dłoni między pierwszą a piątą klatką ---
@@ -262,7 +262,7 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
                 sredni_ruch = 0
 
             #  statyczny czy dynamiczny
-            if sredni_ruch > ruchowy_prog:
+            if sredni_ruch >= ruchowy_prog:
                 wynik_dyn = klasyfikuj_dyn(list(bufor), wzorce_dyn)
 
                 if wynik_dyn != '-':
@@ -270,12 +270,15 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
                     bufor.clear()
                 else:
                     print(f"👌 Wykryto gest statyczny: {wynik_stat}")
+                    bufor.clear()
             else:
                 print(f"👌 Ręka stabilna ({sredni_ruch:.3f}) → gest statyczny: {wynik_stat}")
+                bufor.clear()
         else:
             print(f"👌 Wykryto gest statyczny: {wynik_stat}")
+            bufor.clear()
 
-        cv2.imshow("Podgląd", frame)
+        cv2.imshow("Podglad", frame)
         if cv2.waitKey(30) & 0xFF == ord('q'):
             break
 
@@ -289,8 +292,8 @@ def przetworz_video(video_path, wzorce_stat, wzorce_dyn):
 def main():
     videos = ["pfa2.mp4"]
 
-    wzorce_stat = wczytaj_wzorce(r"C:\\Users\\Ola Sawicka\\Desktop\\semestr 7\\thesis\\statycze")
-    wzorce_dyn = wczytaj_wzorce_dynamiczne(r"C:\\Users\\Ola Sawicka\\Desktop\\semestr 7\\thesis\\dynamiczne")
+    wzorce_stat = wczytaj_wzorce("statyczne")
+    wzorce_dyn = wczytaj_wzorce_dynamiczne("dynamiczne")
 
     for video in videos:
         przetworz_video(video, wzorce_stat, wzorce_dyn)

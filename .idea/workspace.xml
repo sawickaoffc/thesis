@@ -4,9 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cb9ab972-a439-4aab-93c7-c5b6e8d526ba" name="Changes" comment="jest git ale nie rozruznia dobrze wszystkiego">
+    <list default="true" id="cb9ab972-a439-4aab-93c7-c5b6e8d526ba" name="Changes" comment="końcowa prawdopodobnie wersja">
+      <change afterPath="$PROJECT_DIR$/przykład1.pdf" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/przykład2.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/statycze.zip" beforeDir="false" afterPath="$PROJECT_DIR$/statycze.zip" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,6 +108,13 @@
       <workItem from="1760892533180" duration="2865000" />
       <workItem from="1761055642206" duration="5007000" />
       <workItem from="1761074740142" duration="1946000" />
+      <workItem from="1761162446589" duration="671000" />
+      <workItem from="1761228586724" duration="1585000" />
+      <workItem from="1761293358753" duration="7760000" />
+      <workItem from="1761326084417" duration="624000" />
+      <workItem from="1761737007658" duration="3693000" />
+      <workItem from="1761908877389" duration="1908000" />
+      <workItem from="1762098753147" duration="651000" />
     </task>
     <task id="LOCAL-00001" summary="ok">
       <option name="closed" value="true" />
@@ -155,7 +164,31 @@
       <option name="project" value="LOCAL" />
       <updated>1760881073870</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="proba 1">
+      <option name="closed" value="true" />
+      <created>1761296458885</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1761296458885</updated>
+    </task>
+    <task id="LOCAL-00008" summary="analizowanie z promotorem wersja">
+      <option name="closed" value="true" />
+      <created>1761305471439</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1761305471439</updated>
+    </task>
+    <task id="LOCAL-00009" summary="końcowa prawdopodobnie wersja">
+      <option name="closed" value="true" />
+      <created>1762099423663</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1762099423663</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -169,7 +202,10 @@
     <MESSAGE value="dalej mam dużo tych komentarzy dziwnych ale zczytuje dobrze literki, musze zwiekszyc filtr żeby nie wypluwało aż tyle lietr ale poza tym jest dobrze" />
     <MESSAGE value="nie ma az tyle literek" />
     <MESSAGE value="jest git ale nie rozruznia dobrze wszystkiego" />
-    <option name="LAST_COMMIT_MESSAGE" value="jest git ale nie rozruznia dobrze wszystkiego" />
+    <MESSAGE value="proba 1" />
+    <MESSAGE value="analizowanie z promotorem wersja" />
+    <MESSAGE value="końcowa prawdopodobnie wersja" />
+    <option name="LAST_COMMIT_MESSAGE" value="końcowa prawdopodobnie wersja" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -183,7 +219,8 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/thesis$main.coverage" NAME="main Coverage Results" MODIFIED="1761057733190" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+    <SUITE FILE_PATH="coverage/main_py$main.coverage" NAME="main Coverage Results" MODIFIED="1761908887876" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+    <SUITE FILE_PATH="coverage/thesis$main.coverage" NAME="main Coverage Results" MODIFIED="1761306263365" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
     <SUITE FILE_PATH="coverage/thesis$test.coverage" NAME="test Coverage Results" MODIFIED="1760281839851" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
